@@ -4,6 +4,7 @@ import java.io.File
 import org.jsoup.Jsoup
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.BufferedReader
 
 @Serializable
 data class TermFreq(
@@ -26,6 +27,8 @@ data class DocumentIndex (
 fun main() {
     var query: String = ""
 
+    var documentIndex = loadData()
+
     while (query != "q") {
         println("")
         println("-------------------------------------------")
@@ -42,12 +45,35 @@ fun main() {
 
         if(query == "index") {
             indexDocuments()
+            println("LOADING DOCUMENT INDEX")
+            documentIndex = loadData()
         }
 
         if(query == "search"){
             print("PLEASE ENTER SEARCH TERM => ")
-            var searchTerm = readln().trim()
-            println("RESULTS FOR => $searchTerm")
+            var searchTokens = tokenize(readln().trim())
+            println("RESULTS FOR => ${searchTokens}")
+            
+            val results = mutableListOf<String>()
+
+            for (termFreqPerDoc in documentIndex.tf) {
+                val filePath = termFreqPerDoc.file
+
+                for (termFreq in termFreqPerDoc.termFreq) {
+                    if(searchTokens.indexOf(termFreq.term) != -1 && results.size < 10){
+                        results.add(filePath)
+                    }
+                }
+            }
+
+            if(results.size > 0){
+                for (file in results) {
+                    println(" => $file")
+                }
+            }else{
+                println("NO RESULTS FOUND")
+            }
+            
         }
 
     }
@@ -55,9 +81,8 @@ fun main() {
 }
 
 fun indexDocuments (){
-    val dirPath = "/home/ali/Documents/docs/";
+    val dirPath = "/home/ali/Documents/docs";
     var filesProcessedCount = 0
-    val filesContainer = mutableListOf<File>()
     val termFreqPerDoc = mutableMapOf<File, MutableMap<String, Int>>()    
     val documents = mutableListOf<TermFreqPerDoc>()
 
@@ -66,7 +91,6 @@ fun indexDocuments (){
         root.walk()
             .filter { it.isFile }
             .forEach { file ->
-                filesContainer.add(file)
                 processFile(file, termFreqPerDoc)
                 filesProcessedCount++
             }
@@ -141,7 +165,21 @@ fun parseHtmlFile(file: File) : String {
 }
 
 fun tokenize(content: String): List<String> {
-    return content.lowercase()
+    return content.uppercase()
         .split(Regex("[^a-zA-Z0-9]+")) // Split by anything that isn't a letter or number
         .filter { it.length > 1 }      // Ignore single letters like "a"
+}
+
+fun printData() {
+    val file = File("index.json")
+    val bufferedReader: BufferedReader = file.bufferedReader()
+    val inputString = bufferedReader.use { it.readText() }
+    println(Json.decodeFromString<DocumentIndex>(inputString))
+}
+
+fun loadData() : DocumentIndex {
+    val file = File("index.json")
+    val bufferedReader: BufferedReader = file.bufferedReader()
+    val inputString = bufferedReader.use { it.readText() }
+    return Json.decodeFromString<DocumentIndex>(inputString)
 }
