@@ -15,7 +15,7 @@ kotlinc -cp "$JAR_PATH" -Xplugin="$X_PLUGIN" "$MAIN_FILE" -d .
 if [ $? -eq 0 ]; then
     echo "RUNNING..."
     # 3. Run (using : as separator for Unix)
-    kotlin -cp "$JAR_PATH:." "$PACKAGE.$CLASS_NAME"
+    kotlin -cp "$JAR_PATH:." "$PACKAGE.$CLASS_NAME" "$@"
 else
     echo "COMPILATION FAILED."
 fi

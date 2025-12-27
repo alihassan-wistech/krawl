@@ -24,34 +24,34 @@ data class DocumentIndex (
     val idf: List<TermFreqPerDoc>
 )
 
-fun main() {
-    var query: String = ""
+fun main(args: Array<String>) {
 
-    var documentIndex = loadData()
-
-    while (query != "q") {
-        println("")
-        println("-------------------------------------------")
-        println("PLEASE USE ONE OF THE FOLLOWING COMMANDS :")
+    var arg = ""
+    if(args.size > 0){
+        arg = args[0]
+    }else{
+        println("PLEASE PROVIDE AN ARGUMENT")
+        println("VALID ARGUMENTS ARE FOLLOWING:")
         println("   - 'index' => FOR INDEXING THE DOCUMENTS")
         println("   - 'search' => FOR SEARCHING THROUGH THE INDEX")
-        println("   - 'q' => FOR EXITING THE PROGRAM")
-        println("-------------------------------------------")
-        println("")
+        return
+    }
 
-        print("COMMAND => ")
-        query = readln().trim() // .trim() removes accidental spaces
-        println("PROCESSING RESULTS FOR => $query")
+    if(arg == "index") {
+        indexDocuments()
+    } else if(arg == "search"){
+        val documentIndex = loadData()
+        var searchTerm = ""
 
-        if(query == "index") {
-            indexDocuments()
-            println("LOADING DOCUMENT INDEX")
-            documentIndex = loadData()
-        }
+        while(searchTerm != "q"){
+            print("PLEASE ENTER SEARCH TERM OR 'q' TO EXIT => ")
+            searchTerm = readln().trim()
 
-        if(query == "search"){
-            print("PLEASE ENTER SEARCH TERM => ")
-            var searchTokens = tokenize(readln().trim())
+            if(searchTerm == "q"){
+                continue
+            }
+
+            var searchTokens = tokenize(searchTerm)
             println("RESULTS FOR => ${searchTokens}")
             
             val results = mutableListOf<String>()
@@ -70,14 +70,20 @@ fun main() {
                 for (file in results) {
                     println(" => $file")
                 }
+
+                println(" => ${results.size} RESULTS FOUND")
             }else{
                 println("NO RESULTS FOUND")
             }
-            
         }
 
+    }else{
+        println("PLEASE PROVIDE AN ARGUMENT")
+        println("VALID ARGUMENTS ARE FOLLOWING:")
+        println("   - 'index' => FOR INDEXING THE DOCUMENTS")
+        println("   - 'search' => FOR SEARCHING THROUGH THE INDEX")
+        return
     }
-
 }
 
 fun indexDocuments (){
