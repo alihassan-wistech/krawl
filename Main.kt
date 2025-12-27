@@ -30,58 +30,16 @@ fun main(args: Array<String>) {
     if(args.size > 0){
         arg = args[0]
     }else{
-        println("PLEASE PROVIDE AN ARGUMENT")
-        println("VALID ARGUMENTS ARE FOLLOWING:")
-        println("   - 'index' => FOR INDEXING THE DOCUMENTS")
-        println("   - 'search' => FOR SEARCHING THROUGH THE INDEX")
+        showValidCommands()
         return
     }
 
     if(arg == "index") {
         indexDocuments()
     } else if(arg == "search"){
-        val documentIndex = loadData()
-        var searchTerm = ""
-
-        while(searchTerm != "q"){
-            print("PLEASE ENTER SEARCH TERM OR 'q' TO EXIT => ")
-            searchTerm = readln().trim()
-
-            if(searchTerm == "q"){
-                continue
-            }
-
-            var searchTokens = tokenize(searchTerm)
-            println("RESULTS FOR => ${searchTokens}")
-            
-            val results = mutableListOf<String>()
-
-            for (termFreqPerDoc in documentIndex.tf) {
-                val filePath = termFreqPerDoc.file
-
-                for (termFreq in termFreqPerDoc.termFreq) {
-                    if(searchTokens.indexOf(termFreq.term) != -1 && results.size < 10){
-                        results.add(filePath)
-                    }
-                }
-            }
-
-            if(results.size > 0){
-                for (file in results) {
-                    println(" => $file")
-                }
-
-                println(" => ${results.size} RESULTS FOUND")
-            }else{
-                println("NO RESULTS FOUND")
-            }
-        }
-
+        commandLineSearch()
     }else{
-        println("PLEASE PROVIDE AN ARGUMENT")
-        println("VALID ARGUMENTS ARE FOLLOWING:")
-        println("   - 'index' => FOR INDEXING THE DOCUMENTS")
-        println("   - 'search' => FOR SEARCHING THROUGH THE INDEX")
+        showValidCommands()
         return
     }
 }
@@ -188,4 +146,67 @@ fun loadData() : DocumentIndex {
     val bufferedReader: BufferedReader = file.bufferedReader()
     val inputString = bufferedReader.use { it.readText() }
     return Json.decodeFromString<DocumentIndex>(inputString)
+}
+
+fun showValidCommands(){
+    println("PLEASE PROVIDE AN ARGUMENT")
+    println("VALID ARGUMENTS ARE FOLLOWING:")
+    println("   - 'index' => FOR INDEXING THE DOCUMENTS")
+    println("   - 'search' => FOR SEARCHING THROUGH THE INDEX")
+}
+
+fun commandLineSearch(){
+    val documentIndex = loadData()
+    var searchTerm = ""
+
+    while(searchTerm != "q"){
+        print("PLEASE ENTER SEARCH TERM OR 'q' TO EXIT => ")
+        searchTerm = readln().trim()
+
+        if(searchTerm == "q"){
+            continue
+        }
+
+        var searchTokens = tokenize(searchTerm)
+        println("RESULTS FOR => ${searchTokens}")
+        
+        val results = mutableListOf<MutableMap<String, Int>>()
+
+        for (termFreqPerDoc in documentIndex.tf) {
+            val filePath = termFreqPerDoc.file
+
+            for (termFreq in termFreqPerDoc.termFreq) {
+                if(searchTokens.indexOf(termFreq.term) != -1){
+                    results.add(mutableMapOf<String, Int>(Pair(filePath, termFreq.freq)))
+                }
+            }
+        }
+
+                
+
+        if(results.size > 0){
+            val resultsAfterScore = mutableMapOf<String, Float>()
+            for (file in results) {
+                val filePath = file.keys.first()
+                val freq = file.values.first()
+                val tf = freq.toFloat() / results.size
+
+                resultsAfterScore[filePath] = if (resultsAfterScore[filePath] != null) {
+                    resultsAfterScore[filePath]!! + tf
+                } else {
+                    tf
+                }
+            }
+
+            val sortedList = resultsAfterScore.toList().sortedByDescending { (_, value) -> value }
+            for ((key, value) in sortedList.take(10)) {
+                val value = resultsAfterScore[key]
+                println(" => ${key} => ${value}")
+            }
+
+            println(" => ${results.size} RESULTS FOUND")
+        }else{
+            println("NO RESULTS FOUND")
+        }
+    }
 }
